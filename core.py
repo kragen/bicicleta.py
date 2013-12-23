@@ -278,16 +278,27 @@ function derive(base, methods) {
 // For the moment, assumes the other operand of arithmetic operations is also a bint.
 function bint(n) {
   return { n: n
-         , '$+': function() {
-             var that = this; return {
-               '$()': function() { console.log(that, this.$arg1()); return bint(that.n + this.$arg1().n) }
-             };
-           }
+         , '$+': bicicletaBinaryNativeMethod(function(a, b) { return a + b })
+         , '$-': bicicletaBinaryNativeMethod(function(a, b) { return a - b })
+           // Methods for interoperability with JS.
+         , valueOf: function() { return this.n }
+         , toString: function() { return '' + this.n }
          };
+}
+
+// For the moment, assumes that bint() is the way to wrap the primitive object.
+function bicicletaBinaryNativeMethod(lambda) {
+  return function() {
+    var that = this; return { '$()': function() {
+                                return bint(lambda(that.n, this.$arg1().n));
+                              }
+                            };
+  };
 }
 
 var root_bob = {};
 
+/*
 """
 
 def js(expr):
