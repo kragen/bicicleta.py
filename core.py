@@ -187,6 +187,8 @@ class VarRef(object):
         return self.name
     def eval(self, env):
         return env[self.name]
+    def js(self):
+        return self.name
 
 class Literal(object):
     def __init__(self, value):
@@ -195,6 +197,11 @@ class Literal(object):
         return self.value.show()
     def eval(self, env):
         return self.value
+    def js(self):
+        if self.value is root_bob:
+            return 'root_bob'
+        assert self.value.primval is not None
+        return js_repr(self.value.primval)
 
 class Call(object):
     def __init__(self, receiver, slot):
@@ -204,6 +211,10 @@ class Call(object):
         return '%s.%s' % (self.receiver, self.slot)
     def eval(self, env):
         return self.receiver.eval(env)[self.slot]
+    def js(self):
+        return '%s[%s]()' % (self.receiver.js(), js_repr('$' + self.slot))
+
+js_repr = repr                  # XXX will fuck up on Unicode
 
 def make_extend(base, name, bindings):
     extend = SelflessExtend if name is None else Extend
@@ -224,12 +235,49 @@ class Extend(object):
         return Bob(self.base.eval(env),
                    {slot: make_slot_thunk(self.name, expr, env)
                     for slot, expr in self.bindings})
+    def js(self):
+        # Here.  I have to figure out if self.base is nonexistent.
+        # Oh, that could work.
+        return 'derive(%s, { %s\n})' % (self.base.js(),
+                                        js_methods(self.js_bindings()))
+    def js_bindings(self):
+        for name, value in self.bindings:
+            yield name, 'function() { var %s = this; return %s }' % (
+                self.name, value.js())
 
 class SelflessExtend(Extend):
     def eval(self, env):
         return Bob(self.base.eval(env),
                    {slot: make_selfless_slot_thunk(expr, env)
                     for slot, expr in self.bindings})
+    def js_bindings(self):
+        for name, value in self.bindings:
+            yield name, 'function() { return %s }' % value.js()
+
+def js_methods(bindings):
+    return '\n,  '.join('%s: %s' % (js_repr('$' + name), val)
+                        for name, val in bindings)
+
+js_prologue = """
+// Crockford's object function, extended to derive from an existing
+// object.
+
+function derive(base, methods) {
+         function F() {}
+         F.prototype = base;
+         var o = new F();
+         for (var m in methods) {
+             if (methods.hasOwnProperty(m)) o[m] = methods[m];
+         }
+         return o;
+}
+
+root_bob = {};
+
+"""
+
+def js(expr):
+    return js_prologue + expr.js()
 
 def make_selfless_slot_thunk(expr, env):
     return lambda _, __: expr.eval(env)
