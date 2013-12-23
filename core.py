@@ -63,7 +63,7 @@ string_type = str               # XXX or unicode, in python2
 def miranda_show(primval, prim_to_str, bob):
     shown = '' if primval is None else prim_to_str(primval)
     slots = bob.list_slots()
-    if slots: shown += '{' + ', '.join(sorted(slots)) + '}' 
+    if slots: shown += '{' + ', '.join(sorted(slots)) + '}'
     return String(shown)
 
 class Prim(Bob):
@@ -331,7 +331,7 @@ primary     = name                          VarRef
             | _ \( _ expr \)
             | empty derive                  attach
 
-affixes     = affix affixes | 
+affixes     = affix affixes |
 affix       = _ [.] name                    defer_dot
             | derive
             | _ \( bindings _ \)            defer_funcall
@@ -343,11 +343,11 @@ bindings    = binds                         name_positions
 binds       = binding newline binds
             | binding _ , binds
             | binding
-            | 
+            |
 binding     = name _ [=] expr               hug
             | positional expr               hug
 
-infixes     = infix infixes | 
+infixes     = infix infixes |
 infix       = infix_op factor               defer_infix
 infix_op    = _ !lone_eq opchars
 opchars     = ([-~`!@$%^&*+<>?/|\\=]+)
@@ -357,7 +357,7 @@ name        = _ ([A-Za-z_][A-Za-z_0-9]*)
             | _ '([^'\\]*)'
 
 newline     = blanks \n
-blanks      = blank blanks | 
+blanks      = blank blanks |
 blank       = !\n (?:\s|#.*)
 
 _           = (?:\s|#.*)*
@@ -468,7 +468,7 @@ test_extend = parse("""
 
 def make_fac(n):
     fac = parse("""
-{env: 
+{env:
  fac = {fac:   # fac for factorial
         '()' = (fac.n == 0).if(so = 1,
                                else = fac.n * env.fac(n = fac.n-1))}
