@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Interpreter for a dialect of Bicicleta. I changed the 'if' syntax and
 left out some things.
@@ -201,7 +202,7 @@ class Literal(object):
         if self.value is root_bob:
             return 'root_bob'
         assert self.value.primval is not None
-        return js_repr(self.value.primval)
+        return 'bint(%s)' % js_repr(self.value.primval)
 
 class Call(object):
     def __init__(self, receiver, slot):
@@ -259,6 +260,7 @@ def js_methods(bindings):
                         for name, val in bindings)
 
 js_prologue = """
+/**/
 // Crockford's object function, extended to derive from an existing
 // object.
 
@@ -272,7 +274,19 @@ function derive(base, methods) {
          return o;
 }
 
-root_bob = {};
+// Bicicleta int.
+// For the moment, assumes the other operand of arithmetic operations is also a bint.
+function bint(n) {
+  return { n: n
+         , '$+': function() {
+             var that = this; return {
+               '$()': function() { console.log(that, this.$arg1()); return bint(that.n + this.$arg1().n) }
+             };
+           }
+         };
+}
+
+var root_bob = {};
 
 """
 
@@ -468,3 +482,5 @@ def make_fib(n):
 
 ## run(make_fib(5))
 #. '8'
+
+# */
