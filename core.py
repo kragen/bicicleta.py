@@ -274,12 +274,21 @@ function derive(base, methods) {
          return o;
 }
 
+function bbool(flag) {
+    return flag ? btrue : bfalse;
+}
+var btrue  = { '$if': function() { return pickSo; } };
+var bfalse = { '$if': function() { return pickElse; } };
+var pickSo   = { '$()': function() { return this['$so'](); } };
+var pickElse = { '$()': function() { return this['$else'](); } };
+
 // Bicicleta int.
 // For the moment, assumes the other operand of arithmetic operations is also a bint.
 function bint(n) {
   return { n: n
          , '$+': bicicletaBinaryNativeMethod(function(a, b) { return a + b })
          , '$-': bicicletaBinaryNativeMethod(function(a, b) { return a - b })
+         , '$<': bicicletaBinaryNativeTest(function(a, b) { return a < b })
            // Methods for interoperability with JS.
          , valueOf: function() { return this.n }
          , toString: function() { return '' + this.n }
@@ -295,11 +304,19 @@ function bicicletaBinaryNativeMethod(lambda) {
                             };
   };
 }
+function bicicletaBinaryNativeTest(lambda) {
+  return function() {
+    var that = this; return { '$()': function() {
+                                return bbool(lambda(that.n, this.$arg1().n));
+                              }
+                            };
+  };
+}
 
 var root_bob = {};
 
 /*
-"""
+"""+"*"+"/\n"
 
 def js(expr):
     return js_prologue + expr.js()
